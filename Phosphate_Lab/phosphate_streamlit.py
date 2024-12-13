@@ -10,59 +10,66 @@ Original file is located at
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 
 # Title of the application
-st.title("Phosphorus Sampling Visualization")
+st.title("Visualization of Phosphorus Movement in Loess Soil")
 
 st.write("""
-This enhanced application visualizes phosphorus sampling points on a dish with measurements.
-Each sample point includes information such as tube number, cuvette number, and the phosphorus reading.
+This application illustrates the dynamics of phosphorus movement in loess soil based on experimental results. 
+It allows you to interactively explore the data, analyze phosphorus concentrations at different distances, and compare treatments over time.
 """)
 
-# Load the data
+# Create the dataset
 data = {
-    'Sample Point': [1, 2, 3, 4, 5, 6, 7, 8],
-    'Tube Number': [1, 1, 2, 2, 3, 3, 4, 4],
-    'Cuvette Number': [1, 2, 3, 4, 5, 6, 7, 8],
-    'Reading': [0.782, 1.015, 0.191, 0.482, 0.122, 0.292, 0.837, 1.160]
+    'Cuvette Number': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+    'Treatment': ['P+1']*12 + ['P-1']*6,
+    'Dilution': [1, 2]*9,
+    'Reading': [0.782, 1.015, 0.191, 0.482, 0.122, 0.292, 0.837, 1.16, 0.123, 0.285, 0.107, 0.262, 
+                0.261, 0.286, 0.271, 0.251, 0.263, 0.241]
 }
+
+# Load the data into a DataFrame
 df = pd.DataFrame(data)
 
 # Display the raw data table
-st.subheader("Phosphorus Measurement Data")
+st.subheader("Experimental Data Table")
 st.dataframe(df)
 
-# Load the background image
-image_path = "image.png"  # Replace with the path to your image file
-img = mpimg.imread(image_path)
+# Allow selection of treatment for analysis
+treatment = st.selectbox("Select Treatment", df['Treatment'].unique())
 
-# Coordinates for sampling points
-sample_coordinates = [
-    (4, 5), (6, 5), (4, 6), (6, 6), (4, 7), (6, 7), (4, 8), (6, 8)
-]
+# Filter data based on treatment
+filtered_data = df[df['Treatment'] == treatment]
 
-# Plot the image with sample points and readings
-st.subheader("Sampling Points Visualization")
-fig, ax = plt.subplots(figsize=(6, 6))
-ax.imshow(img, extent=[0, 10, 0, 10])  # Adjust image dimensions
+# Add distance information
+distances = [1, 2, 3] * (len(filtered_data) // 3)
+filtered_data['Distance (cm)'] = distances
 
-# Overlay sampling points with annotations
-for i, (x, y) in enumerate(sample_coordinates):
-    sample_info = df.iloc[i]
-    ax.plot(x, y, 'wo', markersize=15)  # White circle for sample point
-    ax.text(x, y, f"T{sample_info['Tube Number']}\nC{sample_info['Cuvette Number']}\n{sample_info['Reading']}",
-            color='black', ha='center', va='center', fontsize=8)
-
-# Remove axes for cleaner display
-ax.axis('off')
+# Plot phosphorus readings vs distance
+st.subheader(f"Phosphorus Concentration vs Distance for {treatment}")
+fig, ax = plt.subplots()
+ax.plot(filtered_data['Distance (cm)'], filtered_data['Reading'], marker='o', linestyle='-', color='b')
+ax.set_xlabel("Distance from Application Point (cm)")
+ax.set_ylabel("Phosphorus Reading")
+ax.set_title(f"Phosphorus Movement - {treatment}")
 st.pyplot(fig)
 
-# Quick summary statistics
-st.subheader("Quick Statistics")
-mean_reading = df['Reading'].mean()
-max_reading = df['Reading'].max()
-st.write(f"**Average Reading:** {mean_reading:.3f}")
-st.write(f"**Maximum Reading:** {max_reading:.3f}")
+# Quick statistical summary
+st.subheader("Quick Analysis")
+mean_reading = filtered_data['Reading'].mean()
+max_reading = filtered_data['Reading'].max()
+st.write(f"**Average Reading for {treatment}:** {mean_reading:.3f}")
+st.write(f"**Maximum Reading for {treatment}:** {max_reading:.3f}")
 
+# Additional interaction: Compare Treatments
+st.subheader("Compare Treatments")
+comparison_df = df.pivot_table(index='Cuvette Number', columns='Treatment', values='Reading')
+st.line_chart(comparison_df)
+
+# Conclusion
+st.write("""
+### Insights:
+- The graph shows the dynamics of phosphorus availability at various distances.
+- Use the treatment selector to explore the results interactively and compare patterns.
+""")
 
